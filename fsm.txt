@@ -1,0 +1,6 @@
+STATES 4
+INIT
+3
+ARCS
+0:1
+1:2

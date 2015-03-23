@@ -21,26 +21,36 @@ type Transition struct {
 	to   int
 }
 
-func Parse(lines []string) StateMachine {
+func Parse(lines []string) (StateMachine, []string) {
 	states := []State{}
 	transitions := []Transition{}
+	var numStates int
 
 	for i, line := range lines {
-		if line[0:6] == "STATES" {
+		if len(line) > 5 && line[0:6] == "STATES" {
 			strStates := strings.Split(line, " ")[1]
-			numStates, _ := strconv.Atoi(strStates)
+			numStates, _ = strconv.Atoi(strStates)
 			states = createStates(numStates)
-		}
-		if line[0:4] == "INIT" {
-			curLine := i
-			for isInt(lines[curLine+1]) {
-				state, _ := strconv.Atoi(lines[curLine+1])
+		} else if len(line) > 3 && line[0:4] == "INIT" {
+			curLine := i + 1
+			for isInt(lines[curLine]) {
+				state, _ := strconv.Atoi(lines[curLine])
 				states = markInitial(states, state)
+				curLine++
+			}
+		} else if len(line) > 3 && line[0:4] == "ARCS" {
+			curLine := i + 1
+			for curLine < len(lines) && isInt(string(lines[curLine][0])) {
+				from, _ := strconv.Atoi(strings.Split(lines[curLine], ":")[0])
+				to, _ := strconv.Atoi(strings.Split(lines[curLine], ":")[1])
+				if from < numStates && to < numStates {
+					transitions = append(transitions, Transition{from, to})
+				}
 				curLine++
 			}
 		}
 	}
-	return StateMachine{states, transitions}
+	return StateMachine{states, transitions}, []string{}
 }
 
 func createStates(numStates int) []State {
@@ -53,9 +63,9 @@ func createStates(numStates int) []State {
 }
 
 func markInitial(states []State, initState int) []State {
-	for _, state := range states {
+	for i, state := range states {
 		if state.ID == initState {
-			state.Initial = true
+			states[i].Initial = true
 		}
 	}
 	return states
