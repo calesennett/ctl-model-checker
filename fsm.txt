@@ -1,6 +1,17 @@
 STATES 4
+
 INIT
-3
+0
+
 ARCS
 0:1
 1:2
+
+LABEL tt
+0
+1
+2
+
+LABEL x
+0
+1

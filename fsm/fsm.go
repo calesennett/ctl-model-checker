@@ -40,12 +40,20 @@ func Parse(lines []string) (StateMachine, []string) {
 			}
 		} else if len(line) > 3 && line[0:4] == "ARCS" {
 			curLine := i + 1
-			for curLine < len(lines) && isInt(string(lines[curLine][0])) {
+			for curLine < len(lines) && lines[curLine] != "" {
 				from, _ := strconv.Atoi(strings.Split(lines[curLine], ":")[0])
 				to, _ := strconv.Atoi(strings.Split(lines[curLine], ":")[1])
 				if from < numStates && to < numStates {
 					transitions = append(transitions, Transition{from, to})
 				}
+				curLine++
+			}
+		} else if len(line) > 4 && line[0:5] == "LABEL" {
+			curLine := i
+			label := strings.Split(lines[curLine], " ")[1]
+			for curLine+1 < len(lines) && isInt(lines[curLine+1]) {
+				state, _ := strconv.Atoi(lines[curLine+1])
+				states = labelState(states, label, state)
 				curLine++
 			}
 		}
@@ -66,6 +74,20 @@ func markInitial(states []State, initState int) []State {
 	for i, state := range states {
 		if state.ID == initState {
 			states[i].Initial = true
+		}
+	}
+	return states
+}
+
+func labelState(states []State, label string, state int) []State {
+	for i, s := range states {
+		if s.ID == state {
+			if states[i].Label == "" {
+				states[i].Label = label
+			} else {
+				states[i].Label += "," + label
+			}
+
 		}
 	}
 	return states
