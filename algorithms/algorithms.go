@@ -28,6 +28,25 @@ func Run(sm fsm.StateMachine, comps []string) {
 			fmt.Println(comp + ":")
 			fmt.Println(result)
 		}
+		if strings.Split(comp, " ")[0] == "E" {
+			labelg := strings.Split(comp, " ")[1]
+			labelf := strings.Split(comp, " ")[3]
+			f := mtx.MakeSparseMatrix(make(map[int]float64), 1, len(sm.States))
+			g := mtx.MakeSparseMatrix(make(map[int]float64), 1, len(sm.States))
+			for _, s := range sm.States {
+				if s.HasLabel(labelg) {
+					g.Set(1, s.ID, 1)
+				}
+				if s.HasLabel(labelf) {
+					f.Set(1, s.ID, 1)
+				}
+			}
+			fmt.Println(f)
+			fmt.Println(g)
+			result := until(f, g, E)
+			fmt.Println(comp + ":")
+			fmt.Println(result)
+		}
 	}
 }
 
@@ -41,16 +60,39 @@ func global(h0 *mtx.SparseMatrix, hn *mtx.SparseMatrix, E *mtx.SparseMatrix) *mt
 	}
 }
 
-func and(hn *mtx.SparseMatrix, h0 *mtx.SparseMatrix) *mtx.SparseMatrix {
-	hnArr := hn.DenseMatrix().Array()
-	h0Arr := h0.DenseMatrix().Array()
-	m := mtx.MakeSparseMatrix(make(map[int]float64), 1, len(hnArr))
-	for i, _ := range hnArr {
-		if hnArr[i] == 1 && h0Arr[i] == 1 {
+func and(m1 *mtx.SparseMatrix, m2 *mtx.SparseMatrix) *mtx.SparseMatrix {
+	m1Arr := m1.DenseMatrix().Array()
+	m2Arr := m2.DenseMatrix().Array()
+	m := mtx.MakeSparseMatrix(make(map[int]float64), 1, len(m1Arr))
+	for i, _ := range m1Arr {
+		if m1Arr[i] > 0 && m2Arr[i] > 0 {
 			m.Set(1, i, 1)
 		}
 	}
 	return m
+}
+
+func or(m1 *mtx.SparseMatrix, m2 *mtx.SparseMatrix) *mtx.SparseMatrix {
+	m1Arr := m1.DenseMatrix().Array()
+	m2Arr := m2.DenseMatrix().Array()
+	m := mtx.MakeSparseMatrix(make(map[int]float64), 1, len(m1Arr))
+	for i, _ := range m1Arr {
+		if m1Arr[i] > 0 || m2Arr[i] > 0 {
+			m.Set(1, i, 1)
+		}
+	}
+	return m
+}
+
+func until(hn *mtx.SparseMatrix, g *mtx.SparseMatrix, E *mtx.SparseMatrix) *mtx.SparseMatrix {
+	hNext, _ := hn.TimesSparse(E)
+	hNext = and(hNext, g)
+	hNext = or(hn, hNext)
+	if mtx.Equals(hNext, hn) {
+		return hNext
+	} else {
+		return until(hNext, g, E)
+	}
 }
 
 func next(h0 *mtx.SparseMatrix, E *mtx.SparseMatrix) *mtx.SparseMatrix {
