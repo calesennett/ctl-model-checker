@@ -16,11 +16,13 @@ func Run(sm fsm.StateMachine, comps []string) {
 		for _, s := range sm.States {
 			if s.HasLabel(label) {
 				h0.Set(1, s.ID, 1)
+			} else {
+				h0.Set(1, s.ID, 0)
 			}
 		}
 		if strings.Split(comp, " ")[0] == "EG" {
 			result := global(h0, h0, E)
-			fmt.Println(comp)
+			fmt.Println(comp + ":")
 			fmt.Println(result)
 		}
 		if strings.Split(comp, " ")[0] == "EX" {
@@ -31,8 +33,8 @@ func Run(sm fsm.StateMachine, comps []string) {
 		if strings.Split(comp, " ")[0] == "E" {
 			labelg := strings.Split(comp, " ")[1]
 			labelf := strings.Split(comp, " ")[3]
-			f := mtx.MakeSparseMatrix(make(map[int]float64), 1, len(sm.States))
 			g := mtx.MakeSparseMatrix(make(map[int]float64), 1, len(sm.States))
+			f := mtx.MakeSparseMatrix(make(map[int]float64), 1, len(sm.States))
 			for _, s := range sm.States {
 				if s.HasLabel(labelg) {
 					g.Set(1, s.ID, 1)
@@ -41,8 +43,6 @@ func Run(sm fsm.StateMachine, comps []string) {
 					f.Set(1, s.ID, 1)
 				}
 			}
-			fmt.Println(f)
-			fmt.Println(g)
 			result := until(f, g, E)
 			fmt.Println(comp + ":")
 			fmt.Println(result)
@@ -53,6 +53,7 @@ func Run(sm fsm.StateMachine, comps []string) {
 func global(h0 *mtx.SparseMatrix, hn *mtx.SparseMatrix, E *mtx.SparseMatrix) *mtx.SparseMatrix {
 	hNext, _ := hn.TimesSparse(E)
 	hNext = and(hNext, h0)
+	fmt.Println(hNext)
 	if mtx.Equals(hNext, hn) {
 		return hNext
 	} else {
