@@ -2,7 +2,7 @@ package main
 
 import (
 	"bufio"
-	"fmt"
+	algs "github.com/calesennett/ctl-model-checker/algorithms"
 	fsm "github.com/calesennett/ctl-model-checker/fsm"
 	"os"
 )
@@ -14,6 +14,6 @@ func main() {
 		line := scanner.Text()
 		lines = append(lines, line)
 	}
-	stateMachine, _ := fsm.Parse(lines)
-	fmt.Println(stateMachine)
+	stateMachine, computations := fsm.Parse(lines)
+	algs.Run(stateMachine, computations)
 }

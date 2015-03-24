@@ -1,6 +1,7 @@
 package fsm
 
 import (
+	mtx "github.com/skelterjohn/go.matrix"
 	"strconv"
 	"strings"
 )
@@ -24,6 +25,7 @@ type Transition struct {
 func Parse(lines []string) (StateMachine, []string) {
 	states := []State{}
 	transitions := []Transition{}
+	computations := []string{}
 	var numStates int
 
 	for i, line := range lines {
@@ -56,9 +58,34 @@ func Parse(lines []string) (StateMachine, []string) {
 				states = labelState(states, label, state)
 				curLine++
 			}
+		} else if len(line) > 9 && line[0:10] == "PROPERTIES" {
+			curLine := i + 1
+			for curLine < len(lines) {
+				computations = append(computations, lines[curLine])
+				curLine++
+			}
 		}
 	}
-	return StateMachine{states, transitions}, []string{}
+	return StateMachine{states, transitions}, computations
+}
+
+func (sm *StateMachine) ToMatrix() *mtx.SparseMatrix {
+	elems := make(map[int]float64)
+	matrix := mtx.MakeSparseMatrix(elems, len(sm.States), len(sm.States))
+	for _, t := range sm.Transitions {
+		matrix.Set(t.to, t.from, 1)
+	}
+	return matrix
+}
+
+func (s *State) HasLabel(label string) bool {
+	labels := strings.Split(s.Label, ",")
+	for _, l := range labels {
+		if l == label {
+			return l == label
+		}
+	}
+	return false
 }
 
 func createStates(numStates int) []State {

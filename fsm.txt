@@ -7,11 +7,11 @@ ARCS
 0:1
 1:2
 
-LABEL tt
+LABEL x
 0
 1
 2
 
-LABEL x
-0
-1
+PROPERTIES
+EX x
+EG x
