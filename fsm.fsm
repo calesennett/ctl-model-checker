@@ -13,4 +13,4 @@ LABEL x
 2
 
 PROPERTIES
-(((E x until f) or (not (EX f))) and (EG x))
+((not (EG x)) and (EX x))

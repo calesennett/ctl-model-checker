@@ -69,4 +69,5 @@ LABEL true
 10
 
 PROPERTIES
-E true until et
+((E true until et) and (EG true))
+EG true

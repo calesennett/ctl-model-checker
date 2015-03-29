@@ -3,59 +3,82 @@ package algorithms
 import (
 	"fmt"
 	"github.com/calesennett/ctl-model-checker/fsm"
+	"github.com/robertkrimen/otto"
 	mtx "github.com/skelterjohn/go.matrix"
 	"regexp"
+	"strconv"
+	"strings"
 )
 
 func Run(sm fsm.StateMachine, comps []string) {
-	//E := sm.ToMatrix()
-	//elems := make(map[int]float64)
-	//h0 := mtx.MakeSparseMatrix(elems, 1, len(sm.States))
+	E := sm.ToMatrix()
+	elems := make(map[int]float64)
+	h0 := mtx.MakeSparseMatrix(elems, 1, len(sm.States))
 	for _, comp := range comps {
 		tokens := tokenize(comp)
-		fmt.Println(tokens)
-		//label := strings.Split(comp, " ")[1]
-		//for _, s := range sm.States {
-		//	if s.HasLabel(label) {
-		//		h0.Set(1, s.ID, 1)
-		//	} else {
-		//		h0.Set(1, s.ID, 0)
-		//	}
-		//}
-		//if strings.Split(comp, " ")[0] == "EG" {
-		//	result := Global(h0, h0, E)
-		//	fmt.Println(comp + ":")
-		//	fmt.Println(result)
-		//} else if strings.Split(comp, " ")[0] == "EX" {
-		//	result := Next(h0, E)
-		//	fmt.Println(comp + ":")
-		//	fmt.Println(result)
-		//} else if strings.Split(comp, " ")[0] == "E" {
-		//	labelg := strings.Split(comp, " ")[1]
-		//	labelf := strings.Split(comp, " ")[3]
-		//	g := mtx.MakeSparseMatrix(make(map[int]float64), 1, len(sm.States))
-		//	f := mtx.MakeSparseMatrix(make(map[int]float64), 1, len(sm.States))
-		//	for _, s := range sm.States {
-		//		if s.HasLabel(labelg) {
-		//			g.Set(1, s.ID, 1)
-		//		}
-		//		if s.HasLabel(labelf) {
-		//			f.Set(1, s.ID, 1)
-		//		}
-		//	}
-		//	result := Until(f, g, E)
-		//	fmt.Println(comp + ":")
-		//	fmt.Println(result)
-		//}
+		for i, tok := range tokens {
+			expr := regexp.MustCompile("EX [a-z]+|EG [a-z]+|E [a-z]+ until [a-z]+")
+			if expr.MatchString(tok) {
+				label := strings.Split(tok, " ")[1]
+				for _, s := range sm.States {
+					if s.HasLabel(label) {
+						h0.Set(1, s.ID, 1)
+					} else {
+						h0.Set(1, s.ID, 0)
+					}
+				}
+				if strings.Split(tok, " ")[0] == "EG" {
+					result := Global(h0, h0, E)
+					fmt.Println(tok + ":")
+					fmt.Println(result)
+					res := strconv.Itoa(sm.Satisfies(result))
+					tokens[i] = res
+				} else if strings.Split(tok, " ")[0] == "EX" {
+					result := Next(h0, E)
+					fmt.Println(tok + ":")
+					fmt.Println(result)
+					res := strconv.Itoa(sm.Satisfies(result))
+					tokens[i] = res
+				} else if strings.Split(tok, " ")[0] == "E" {
+					labelg := strings.Split(tok, " ")[1]
+					labelf := strings.Split(tok, " ")[3]
+					g := mtx.MakeSparseMatrix(make(map[int]float64), 1, len(sm.States))
+					f := mtx.MakeSparseMatrix(make(map[int]float64), 1, len(sm.States))
+					for _, s := range sm.States {
+						if s.HasLabel(labelg) {
+							g.Set(1, s.ID, 1)
+						}
+						if s.HasLabel(labelf) {
+							f.Set(1, s.ID, 1)
+						}
+					}
+					result := Until(f, g, E)
+					fmt.Println(tok + ":")
+					fmt.Println(result)
+					res := strconv.Itoa(sm.Satisfies(result))
+					tokens[i] = res
+				}
+			}
+		}
+		// make string from expression
+		expr := strings.Join(tokens, "")
+		expr = regexp.MustCompile("and").ReplaceAllString(expr, "&&")
+		expr = regexp.MustCompile("or").ReplaceAllString(expr, "||")
+		expr = regexp.MustCompile("not").ReplaceAllString(expr, "!")
+		vm := otto.New()
+		vm.Set("expr", expr)
+		vm.Run(`
+			var res = eval(expr);
+		`)
+		value, _ := vm.Get("res")
+		res, _ := value.ToBoolean()
+		fmt.Printf("\nFSM satisfies %v?\n%v\n\n", comp, res)
 	}
 }
 
 func tokenize(comp string) []string {
 	r := regexp.MustCompile("\\(|\\)|or|and|not|EX [a-z]+|EG [a-z]+|E [a-z]+ until [a-z]+")
 	matched := r.FindAllString(comp, -1)
-	for _, match := range matched {
-		fmt.Println(match)
-	}
 	return matched
 }
 

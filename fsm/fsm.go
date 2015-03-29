@@ -127,13 +127,13 @@ func isInt(state string) bool {
 	return false
 }
 
-func (fsm StateMachine) Satisfies(res *mtx.SparseMatrix) bool {
+func (fsm StateMachine) Satisfies(res *mtx.SparseMatrix) int {
 	for i, state := range fsm.States {
 		if state.Initial {
 			if !(res.Get(0, i) == 1) {
-				return false
+				return 0
 			}
 		}
 	}
-	return true
+	return 1
 }
