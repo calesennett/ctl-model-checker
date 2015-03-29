@@ -3,7 +3,7 @@ package main
 import (
 	"bufio"
 	algs "github.com/calesennett/ctl-model-checker/algorithms"
-	fsm "github.com/calesennett/ctl-model-checker/fsm"
+	"github.com/calesennett/ctl-model-checker/fsm"
 	"os"
 )
 

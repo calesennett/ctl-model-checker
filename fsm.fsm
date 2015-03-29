@@ -1,0 +1,16 @@
+STATES 3
+
+INIT
+0
+
+ARCS
+0:1
+1:1
+2:0
+
+LABEL x
+1
+2
+
+PROPERTIES
+(((E x until f) or (not (EX f))) and (EG x))
