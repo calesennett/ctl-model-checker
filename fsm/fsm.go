@@ -6,14 +6,14 @@ import (
 	"strings"
 )
 
-// A StateMachine models a finite state machine with
+// StateMachine models a finite state machine with
 // a set of states and transitions.
 type StateMachine struct {
 	States      []State
 	Transitions []Transition
 }
 
-// A State can be labeled with a proposition
+// State can be labeled with a proposition
 // and optionally be an initial state.
 type State struct {
 	ID      int
@@ -21,7 +21,7 @@ type State struct {
 	Initial bool
 }
 
-// A transition has a from state
+// Transition has a from state
 // and a to state.
 type Transition struct {
 	from int
