@@ -9,12 +9,14 @@ The .fsm file should adhere to these specifications. A blank line should separat
 
 ### Initial States
 Each initial state should be on a separate line:
+
     INIT
     0
     1
 
 ### Transitions
 Each arc should be on a separate line:
+
     ARCS
     0:1
     1:1
@@ -22,12 +24,14 @@ Each arc should be on a separate line:
 
 ### Labels
 Each label should be specified individually with each desired state below:
+
     LABEL f
     1
     2
 
 ### Properties
 Each property should be specified on a separate line:
+
     (EX (EG f))
     (EG f)
 
