@@ -6,32 +6,32 @@ import (
 	"strings"
 )
 
+// A StateMachine models a finite state machine with
+// a set of states and transitions.
 type StateMachine struct {
-	// Models a finite state machine with
-	// a set of states and transitions.
 	States      []State
 	Transitions []Transition
 }
 
+// A State can be labeled with a proposition
+// and optionally be an initial state.
 type State struct {
-	// A state can be labeled with a proposition
-	// and optionally be an initial state.
 	ID      int
 	Label   string
 	Initial bool
 }
 
+// A transition has a from state
+// and a to state.
 type Transition struct {
-	// A transition has a from state
-	// and a to state.
 	from int
 	to   int
 }
 
+// Parse parses a .fsm file (std-in) and creates
+// and returns a StateMachine and a list of
+// computations to be performed on the machine.
 func Parse(lines []string) (StateMachine, []string) {
-	// Parse parses a .fsm file (std-in) and creates
-	// and returns a StateMachine and list of
-	// computations to be performed on the machine.
 	states := []State{}
 	transitions := []Transition{}
 	computations := []string{}
