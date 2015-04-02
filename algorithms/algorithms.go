@@ -3,83 +3,127 @@ package algorithms
 import (
 	"fmt"
 	"github.com/calesennett/ctl-model-checker/fsm"
-	"github.com/robertkrimen/otto"
 	mtx "github.com/skelterjohn/go.matrix"
 	"regexp"
-	"strconv"
-	"strings"
+	//"strconv"
 )
 
 func Run(sm fsm.StateMachine, comps []string) {
 	E := sm.ToMatrix()
-	elems := make(map[int]float64)
-	h0 := mtx.MakeSparseMatrix(elems, 1, len(sm.States))
 	for _, comp := range comps {
+		var operands []interface{}
+		var operators []interface{}
 		tokens := tokenize(comp)
-		for i, tok := range tokens {
-			expr := regexp.MustCompile("EX [a-z]+|EG [a-z]+|E [a-z]+ until [a-z]+")
-			if expr.MatchString(tok) {
-				label := strings.Split(tok, " ")[1]
-				for _, s := range sm.States {
-					if s.HasLabel(label) {
-						h0.Set(1, s.ID, 1)
-					} else {
-						h0.Set(1, s.ID, 0)
+		for _, tok := range tokens {
+			operatorExpr := regexp.MustCompile("EX|EG|until|and|not|or")
+			operandExpr := regexp.MustCompile("[a-z]+")
+			rightParen := regexp.MustCompile("\\)")
+			if operatorExpr.MatchString(tok) {
+				operators = push(tok, operators)
+			} else if operandExpr.MatchString(tok) {
+				operands = push(vectorize(sm, tok), operands)
+			} else if rightParen.MatchString(tok) {
+				var op interface{}
+				op, operators = pop(operators)
+				if op == "EG" {
+					var h0 interface{}
+					h0, operands = pop(operands)
+					if h0, ok := h0.(*mtx.SparseMatrix); ok {
+						result := Global(h0, h0, E)
+						operands = push(result, operands)
 					}
-				}
-				if strings.Split(tok, " ")[0] == "EG" {
-					result := Global(h0, h0, E)
-					fmt.Println(tok + ":")
-					fmt.Println(result)
-					res := strconv.Itoa(sm.Satisfies(result))
-					tokens[i] = res
-				} else if strings.Split(tok, " ")[0] == "EX" {
-					result := Next(h0, E)
-					fmt.Println(tok + ":")
-					fmt.Println(result)
-					res := strconv.Itoa(sm.Satisfies(result))
-					tokens[i] = res
-				} else if strings.Split(tok, " ")[0] == "E" {
-					labelg := strings.Split(tok, " ")[1]
-					labelf := strings.Split(tok, " ")[3]
-					g := mtx.MakeSparseMatrix(make(map[int]float64), 1, len(sm.States))
-					f := mtx.MakeSparseMatrix(make(map[int]float64), 1, len(sm.States))
-					for _, s := range sm.States {
-						if s.HasLabel(labelg) {
-							g.Set(1, s.ID, 1)
-						}
-						if s.HasLabel(labelf) {
-							f.Set(1, s.ID, 1)
+				} else if op == "EX" {
+					var h0 interface{}
+					h0, operands = pop(operands)
+					if h0, ok := h0.(*mtx.SparseMatrix); ok {
+						result := Next(h0, E)
+						operands = push(result, operands)
+					}
+				} else if op == "until" {
+					var f, g interface{}
+					f, operands = pop(operands)
+					g, operands = pop(operands)
+					if f, ok := f.(*mtx.SparseMatrix); ok {
+						if g, ok := g.(*mtx.SparseMatrix); ok {
+							result := Until(f, g, E)
+							operands = push(result, operands)
 						}
 					}
-					result := Until(f, g, E)
-					fmt.Println(tok + ":")
-					fmt.Println(result)
-					res := strconv.Itoa(sm.Satisfies(result))
-					tokens[i] = res
+				} else if op == "or" {
+					var f, g interface{}
+					f, operands = pop(operands)
+					g, operands = pop(operands)
+					if f, ok := f.(*mtx.SparseMatrix); ok {
+						if g, ok := g.(*mtx.SparseMatrix); ok {
+							result := or(f, g)
+							operands = push(result, operands)
+						}
+					}
+				} else if op == "and" {
+					var f, g interface{}
+					f, operands = pop(operands)
+					g, operands = pop(operands)
+					if f, ok := f.(*mtx.SparseMatrix); ok {
+						if g, ok := g.(*mtx.SparseMatrix); ok {
+							result := and(f, g)
+							operands = push(result, operands)
+						}
+					}
+				} else if op == "not" {
+					var f interface{}
+					f, operands = pop(operands)
+					if f, ok := f.(*mtx.SparseMatrix); ok {
+						result := not(f)
+						operands = push(result, operands)
+					}
 				}
 			}
 		}
-		// make string from expression
-		expr := strings.Join(tokens, "")
-		expr = regexp.MustCompile("and").ReplaceAllString(expr, "&&")
-		expr = regexp.MustCompile("or").ReplaceAllString(expr, "||")
-		expr = regexp.MustCompile("not").ReplaceAllString(expr, "!")
-		vm := otto.New()
-		vm.Set("expr", expr)
-		vm.Run(`
-			var res = eval(expr);
-		`)
-		value, _ := vm.Get("res")
-		res, _ := value.ToBoolean()
-		fmt.Printf("\nFSM satisfies %v?\n%v\n\n", comp, res)
+		final := operands[0]
+		if final, ok := final.(*mtx.SparseMatrix); ok {
+			fmt.Println(comp)
+			fmt.Printf("Resulting vector: \n%v\n", final)
+			fmt.Printf("FSM satisfies?\n%v\n\n", sm.Satisfies(final))
+		}
 	}
 }
 
 func tokenize(comp string) []string {
-	r := regexp.MustCompile("\\(|\\)|or|and|not|EX [a-z]+|EG [a-z]+|E [a-z]+ until [a-z]+")
+	r := regexp.MustCompile("\\(|\\)|EG|EX|[a-z]+|or|and|not|until")
 	matched := r.FindAllString(comp, -1)
 	return matched
+}
+
+func vectorize(sm fsm.StateMachine, label string) *mtx.SparseMatrix {
+	elems := make(map[int]float64)
+	h0 := mtx.MakeSparseMatrix(elems, 1, len(sm.States))
+	if label == "true" {
+		for _, s := range sm.States {
+			h0.Set(1, s.ID, 1)
+		}
+	} else if label == "false" {
+		for _, s := range sm.States {
+			h0.Set(1, s.ID, 0)
+		}
+	} else {
+		for _, s := range sm.States {
+			if s.HasLabel(label) {
+				h0.Set(1, s.ID, 1)
+			} else {
+				h0.Set(1, s.ID, 0)
+			}
+		}
+	}
+	return h0
+
+}
+
+func push(elem interface{}, slice []interface{}) []interface{} {
+	return append(slice, elem)
+}
+
+func pop(slice []interface{}) (interface{}, []interface{}) {
+	return slice[len(slice)-1], slice[:len(slice)-1]
 }
 
 func Global(h0 *mtx.SparseMatrix, hn *mtx.SparseMatrix, E *mtx.SparseMatrix) *mtx.SparseMatrix {

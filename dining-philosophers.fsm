@@ -7,13 +7,14 @@ ARCS
 0:1
 0:5
 0:2
+0:7
 1:3
+1:6
 2:3
-3:8
+2:8
 3:4
 4:0
 5:6
-5:7
 5:9
 6:6
 7:8
@@ -55,19 +56,7 @@ LABEL bt
 LABEL et
 10
 
-LABEL true
-0
-1
-2
-3
-4
-5
-6
-7
-8
-9
-10
-
 PROPERTIES
-((E true until et) and (EG true))
-EG true
+((EX (EG rr)) or (EX (EG ll)))
+((EG rr) or (EG ll))
+(E true until et)

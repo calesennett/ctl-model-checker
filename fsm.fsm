@@ -13,4 +13,4 @@ LABEL x
 2
 
 PROPERTIES
-((not (EG x)) and (EX x))
+(EX (EG x))
